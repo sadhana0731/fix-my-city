@@ -55,3 +55,103 @@ function showToast(t){let x=document.getElementById('toast');x.textContent=t;x.c
 render();
 </script>
 </body></html>
+
+const API_BASE = "https://fix-my-city-production-f589.up.railway.app/api";
+
+async function loadBackendReports() {
+  try {
+    const response = await fetch(API_BASE + "/reports");
+    if (!response.ok) throw new Error("Backend error");
+
+    const data = await response.json();
+
+    if (Array.isArray(data)) {
+      reports = data;
+      save();
+      render();
+      showToast("Connected to Fix My City backend.");
+    }
+  } catch (error) {
+    console.log("Backend unavailable:", error);
+  }
+}
+
+async function upvote(id) {
+  if (voted.includes(id)) {
+    showToast("You already upvoted this report.");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      API_BASE + "/reports/" + encodeURIComponent(id) + "/upvote",
+      { method: "POST" }
+    );
+
+    if (!response.ok) throw new Error("Upvote failed");
+
+    const updated = await response.json();
+
+    const index = reports.findIndex(
+      report => String(report.id) === String(id)
+    );
+
+    if (index !== -1) {
+      reports[index] = updated;
+    }
+
+    voted.push(id);
+    save();
+    render();
+
+    showToast("Upvote saved.");
+  } catch (error) {
+    showToast("Could not save your upvote.");
+  }
+}
+
+async function submitReport(e) {
+  e.preventDefault();
+
+  const cat = document.getElementById("category").value;
+  const title = document.getElementById("title").value.trim();
+  const desc = document.getElementById("description").value.trim();
+  const urg = document.getElementById("urgency").value;
+
+  const x = 18 + Math.random() * 64;
+  const y = 18 + Math.random() * 64;
+
+  try {
+    const response = await fetch(API_BASE + "/reports", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        cat,
+        title,
+        desc,
+        urg,
+        x,
+        y
+      })
+    });
+
+    if (!response.ok) throw new Error("Report failed");
+
+    const newReport = await response.json();
+
+    reports.unshift(newReport);
+    save();
+    render();
+
+    e.target.reset();
+
+    showToast("Report saved to the city database.");
+    scrollToId("reports");
+  } catch (error) {
+    showToast("Could not save the report.");
+  }
+}
+
+loadBackendReports();
