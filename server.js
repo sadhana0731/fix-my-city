@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const { Pool } = require("pg");
 
 const app = express();
@@ -14,6 +15,7 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: "5mb" }));
+app.use(express.static(path.join(__dirname)));
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -40,12 +42,8 @@ async function initDatabase() {
 }
 
 app.get("/", (req, res) => {
-  res.json({
-    name: "Fix My City API",
-    status: "online"
-  });
+  res.sendFile(path.join(__dirname, "index.html"));
 });
-
 app.get("/api/reports", async (req, res) => {
   try {
     const result = await pool.query(`
